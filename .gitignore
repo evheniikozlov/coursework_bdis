@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Логи лабораторної з контейнерами — самі лог-файли не комітимо,
+# але структуру папки (.gitkeep) зберігаємо, щоб папка існувала в репо.
+docker-lab/logs/*
+!docker-lab/logs/.gitkeep
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,42 @@
+# Альтернатива ручним docker-командам з README.md — той самий результат
+# (app-контейнер + БД-контейнер, зв'язок, логи на хост), але одним файлом.
+# Запуск:  docker compose -f docker-compose.lab.yml up --build
+# Логи:    cat logs/app.log   (з'являться в docker-lab/logs/ на хості)
+# Стоп:    docker compose -f docker-compose.lab.yml down -v
+
+version: "3.9"
+
+services:
+
+  podcast-db:
+    image: postgres:16
+    container_name: podcast-db
+    environment:
+      POSTGRES_DB: podcast_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - lab-net
+
+  podcast-app:
+    build:
+      context: ./app
+    container_name: podcast-app
+    depends_on:
+      - podcast-db
+    environment:
+      DB_HOST: podcast-db
+      DB_PORT: "5432"
+      DB_NAME: podcast_demo
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./logs:/app/logs      # <-- ключовий рядок: логи пишуться на хост
+    networks:
+      - lab-net
+
+networks:
+  lab-net:
+    driver: bridge

@@ -1,0 +1,89 @@
+# ПОВНА топологія контейнерів для курсової "Подкасти та гості".
+# Це НЕ треба запускати для лабораторної з п.6 завдання (там достатньо
+# docker-lab/app + одного контейнера БД) — цей файл ілюструє, як виглядатиме
+# повна архітектура системи в контейнерах, і йде в звіт як обґрунтування.
+#
+# Запуск (якщо захочете спробувати пізніше, коли бекенд буде готовий):
+#   docker compose -f docker-compose.full-platform.yml up -d
+#
+version: "3.9"
+
+services:
+
+  backend:
+    build:
+      context: ./backend     # каталог з кодом бекенду (FastAPI)
+    container_name: podcast-backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: "mongodb://mongo:27017"
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      NEO4J_URI: "bolt://neo4j:7687"
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      - mongo
+      - elasticsearch
+      - neo4j
+      - redis
+    volumes:
+      - ./logs/backend:/app/logs       # логи бекенду -> на хост
+    networks:
+      - podcast-net
+
+  mongo:
+    image: mongo:7
+    container_name: podcast-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - podcast-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: podcast-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - podcast-net
+
+  neo4j:
+    image: neo4j:5
+    container_name: podcast-neo4j
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+    ports:
+      - "7474:7474"   # HTTP UI
+      - "7687:7687"   # Bolt protocol
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - podcast-net
+
+  redis:
+    image: redis:7
+    container_name: podcast-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - podcast-net
+
+networks:
+  podcast-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  es-data:
+  neo4j-data:
+  redis-data:
